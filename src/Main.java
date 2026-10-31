@@ -7,7 +7,7 @@ public class Main {
     static final String[] ALGORITMOS = {"BubbleSort", "InsertionSort", "MergeSort", "QuickSort"};
     static final int[] THREADS = {2, 4, 8, 12, 16};   // só o paralelo; o serial sempre roda
     static final int[] TAMANHOS = {1000, 5000, 10000, 50000, 100000};
-    static final String[] TIPOS = {"aleatorio", "ordenado", "invertido", "repetidos"};
+    static final String[] TIPOS = {"aleatorio", "ordenado", "invertido", "igual"};
     static final int AMOSTRAS = 5;
     static final int TAMANHO_AQUECIMENTO = 5000;
     static final int RODADAS_AQUECIMENTO = 20;
@@ -21,9 +21,9 @@ public class Main {
     static final String AZUL = "\u001B[34m";
     static final String CIANO = "\u001B[36m";
 
-    static int[][][] vetores;             // vetores[tipo][tamanho]
-    static double[][][] temposSerial;     // temposSerial[tipo][algoritmo][vetor], mediana das amostras
-    static double[][][][] temposParalelo; // temposParalelo[tipo][algoritmo][vetor][threads], mediana das amostras
+    static int[][][] vetores;              // vetores[tipo][tamanho]
+    static double[][][] temposSerial;      // temposSerial[tipo][algoritmo][vetor], mediana das amostras
+    static double[][][][] temposParalelo;  // temposParalelo[tipo][algoritmo][vetor][threads], mediana das amostras
     static PrintWriter csv;
 
     public static void main(String[] args) throws Exception {
@@ -54,7 +54,8 @@ public class Main {
         imprimirTabelas();
     }
 
-    // Rodadas descartadas: sem elas, as primeiras medições cronometram o JIT, não o algoritmo
+    // Aquecimento da JVM: roda os algoritmos algumas vezes sem medir,
+    // para o Java otimizar o código antes das medições de verdade
     static void aquecer() throws Exception {
         System.out.println("Aquecendo a JVM...");
         for (int rodada = 0; rodada < RODADAS_AQUECIMENTO; rodada++) {
@@ -68,30 +69,25 @@ public class Main {
         }
     }
 
-    // Testa um algoritmo com todos os vetores: primeiro o serial, depois o paralelo com cada número de threads
+    // Testa um algoritmo com todos os vetores de um tipo: primeiro o serial, depois o paralelo com cada número de threads
     static void testarAlgoritmo(int k, int a) throws Exception {
         for (int v = 0; v < TAMANHOS.length; v++) {
-            temposSerial[k][a][v] = tempoMediano(k, a, v, "serial", 1);
+            temposSerial[k][a][v] = tempoMediana(k, a, v, "serial", 1);
             for (int t = 0; t < THREADS.length; t++) {
-                temposParalelo[k][a][v][t] = tempoMediano(k, a, v, "paralelo", THREADS[t]);
+                temposParalelo[k][a][v][t] = tempoMediana(k, a, v, "paralelo", THREADS[t]);
             }
         }
     }
 
     // Roda todas as amostras de uma configuração e devolve a mediana
-    static double tempoMediano(int k, int a, int v, String modo, int threads) throws Exception {
+    static double tempoMediana(int k, int a, int v, String modo, int threads) throws Exception {
         double[] tempos = new double[AMOSTRAS];
         for (int s = 0; s < AMOSTRAS; s++) {
             tempos[s] = medir(ALGORITMOS[a], vetores[k][v], modo, threads, TIPOS[k], s + 1);
         }
-        return mediana(tempos);
-    }
-
-    static double mediana(double[] valores) {
-        double[] ordenados = valores.clone();
-        Arrays.sort(ordenados);
-        int n = ordenados.length;
-        return (ordenados[(n - 1) / 2] + ordenados[n / 2]) / 2;
+        // ordena os tempos e pega o do meio
+        Arrays.sort(tempos);
+        return tempos[AMOSTRAS / 2];
     }
 
     // Mede o tempo da execução, grava no CSV e devolve o tempo
@@ -119,12 +115,12 @@ public class Main {
         return ms;
     }
 
-    // Imprime uma tabela de tempos (ms, mediana das amostras) para cada tipo de dado e vetor
+    // Imprime uma tabela de tempos (ms, mediana das amostras) para cada tipo de vetor e tamanho
     static void imprimirTabelas() {
         for (int k = 0; k < TIPOS.length; k++) {
             for (int v = 0; v < TAMANHOS.length; v++) {
                 System.out.println();
-                System.out.println(CIANO + NEGRITO + TIPOS[k] + ": vetor de " + TAMANHOS[v] + " números (tempo em ms)" + RESET);
+                System.out.println(CIANO + NEGRITO + "Vetor " + TIPOS[k] + " de " + TAMANHOS[v] + " números (tempo em ms)" + RESET);
 
                 // cabeçalho
                 System.out.print(NEGRITO);
@@ -182,7 +178,7 @@ public class Main {
             if (tipo.equals("aleatorio")) a[i] = random.nextInt(n);
             if (tipo.equals("ordenado")) a[i] = i;
             if (tipo.equals("invertido")) a[i] = n - i;
-            if (tipo.equals("repetidos")) a[i] = random.nextInt(10);
+            if (tipo.equals("igual")) a[i] = 1;
         }
         return a;
     }
