@@ -1,11 +1,6 @@
-UNIVERSIDADE DE FORTALEZA<br>
-CENTRO DE CIÊNCIAS TECNOLÓGICAS<br>
-CURSO: CIÊNCIA DA COMPUTAÇÃO
-
 # Pesquisa de algoritmos de ordenação seriais e paralelos
 
 Autor 1: Paulo Shizuo Vasconcelos Tatibana
-
 Autor 2: Gustavo Chaves Macedo
 
 Palavras-chave: Algoritmos de ordenação. Programação paralela. Java. Speedup. Análise de desempenho.
