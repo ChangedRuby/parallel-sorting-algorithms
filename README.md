@@ -25,6 +25,26 @@ Pesquisa Descritiva.
 
 Os algoritmos foram implementados em Java, nas classes Serial e Paralelo. A classe Main é o framework de teste: gera os vetores, executa todas as combinações, confere se cada vetor ficou ordenado e grava os tempos em resultados.csv. A classe Graficos lê esse arquivo e mostra gráficos interativos em Java Swing, que se atualizam enquanto o teste roda.
 
+Os Quadros 1 e 2 resumem as versões serial e paralela de cada algoritmo.
+
+**Quadro 1: Versões seriais (classe Serial)**
+
+| Algoritmo | Melhor caso | Caso médio | Pior caso | Estratégia | Detalhes da implementação |
+| --- | --- | --- | --- | --- | --- |
+| BubbleSort | O(n) | O(n²) | O(n²) | Compara vizinhos e troca os que estão fora de ordem | Para cedo se uma passada não troca nada; cada passada ignora o fim, que já está ordenado |
+| InsertionSort | O(n) | O(n²) | O(n²) | Insere cada elemento na posição certa da parte já ordenada | Desloca os elementos maiores em vez de trocar; recebe início e fim, o que permite reaproveitá-lo na versão paralela |
+| MergeSort | O(n log n) | O(n log n) | O(n log n) | Dividir e conquistar: ordena as metades e junta | Recursivo; a junção (merge) usa um vetor auxiliar criado a cada chamada |
+| QuickSort | O(n log n) | O(n log n) | O(n²) | Dividir e conquistar por particionamento | Particionamento de Hoare com pivô no meio, o que evita o pior caso em vetores ordenados ou invertidos |
+
+**Quadro 2: Versões paralelas (classe Paralelo)**
+
+| Algoritmo | Técnica | Divisão do trabalho | Sincronização | Parte serial (gargalo) | Melhor speedup (100.000 aleatórios) |
+| --- | --- | --- | --- | --- | --- |
+| BubbleSort | ThreadPool fixo + Odd-Even Transposition | Vetor dividido em faixas, uma por thread; as fases alternam pares (par, ímpar) e (ímpar, par) | Barreira a cada fase (invokeAll) e um Future&lt;Boolean&gt; para saber se houve troca | ~n fases, cada uma criando tarefas e sincronizando as threads | 2,15 (16 threads) |
+| InsertionSort | ThreadPool fixo (pedaços + merge) | Cada thread ordena um pedaço de n/p elementos | shutdown() + awaitTermination() | Junção dos pedaços em série (p − 1 merges) | 80,98 (16 threads), cerca de 5,8 vindo das threads |
+| MergeSort | ForkJoin (RecursiveAction) com work-stealing | Divide o vetor ao meio e ordena as duas metades em paralelo com invokeAll | Espera das subtarefas no invokeAll antes da junção | Junção final do vetor inteiro em uma só thread | 3,46 (16 threads) |
+| QuickSort | ForkJoin (RecursiveAction) com work-stealing | Particionamento de Hoare e os dois lados ordenados em paralelo com invokeAll | Nenhuma entre os lados (intervalos disjuntos); só a espera do invokeAll | Primeira partição sobre o vetor inteiro | 3,87 (12 threads) |
+
 Os testes combinaram cinco tamanhos de vetor (1.000, 5.000, 10.000, 50.000 e 100.000), quatro tipos de dados (aleatório, ordenado, invertido e com todos os valores iguais) e seis modos de execução (serial e paralelo com 2, 4, 8, 12 e 16 threads). Cada combinação foi repetida cinco vezes, em um total de 2.400 medições. Os dados aleatórios usam semente fixa, então todos os algoritmos ordenam os mesmos vetores.
 
 Tudo rodou em um único computador, com processador AMD Ryzen 7 5700X (8 núcleos e 16 threads lógicas), 31,3 GB de memória, Linux (CachyOS) e OpenJDK 21. O número de núcleos foi aproximado pelo número de threads: o sistema operacional não restringiu os núcleos disponíveis, e a configuração com 16 threads ocupa todas as threads lógicas do processador.
